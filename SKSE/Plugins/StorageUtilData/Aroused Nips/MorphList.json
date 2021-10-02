@@ -1,0 +1,22 @@
+{
+	"stringList" : 
+	{
+		"morphnames" : 
+		[
+			"NippleSize",
+			"NippleLength",
+			"NipplePerkiness",
+			"NippleAreola"
+		]
+	},
+	"floatList" : 
+	{
+		"defaultvalues" : 
+		[
+			-0.75,
+			1.0,
+			1.5,
+			0.0
+		]
+	}
+}

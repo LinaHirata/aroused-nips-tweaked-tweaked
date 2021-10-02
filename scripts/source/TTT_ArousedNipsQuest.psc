@@ -16,36 +16,15 @@ string[] Property MorphNames Auto Hidden
 float[] Property MaxValue Auto Hidden
 float[] Property MaxDefault Auto Hidden
 
-float Property DefaultSize = -0.75 AutoReadOnly Hidden
-float Property DefaultLength = 1.0 AutoReadOnly Hidden
-float Property DefaultCone = 1.5 AutoReadOnly Hidden
-float Property DefaultArea = 0.0 AutoReadOnly Hidden
-
-
-
 Event OnInit()
-	{First-time setup. Setting all defaults.}
+{First-time setup. Setting all defaults.}
+
 	;Note: this initialization is performed only once.
-	
 	Debug.Notification("ArousedNips: first time initialization")
 	Debug.Trace("TTT_ArousedNips: first time initialization")
 	
-	
-	MaxValue = new float[4]
-	MaxValue[0] = DefaultSize
-	MaxValue[1] = DefaultLength
-	MaxValue[2] = DefaultCone
-	MaxValue[3] = DefaultArea
-	
 	ResetDefaults()
-	
-	MorphNames = new String[4]
-	MorphNames[0] = "NippleSize"
-	MorphNames[1] = "NippleLength"
-	MorphNames[2] = "NipplePerkiness"
-	MorphNames[3] = "NippleAreola" 
-	
-	
+	ReloadMorphList()
 	
 	TTT_ArousedNipsPlayerAlias.OnPlayerLoadGame()
 	Isinitialized = true
@@ -55,12 +34,45 @@ Event OnInit()
 EndEvent
 
 Function ResetDefaults()
-	{Keeps defaults up-to-date}
-	
-	MaxDefault = new float[4]
+{Keeps defaults up-to-date}
+
+;/ 	MaxDefault = new float[4]
 	MaxDefault[0] = DefaultSize
 	MaxDefault[1] = DefaultLength
 	MaxDefault[2] = DefaultCone
-	MaxDefault[3] = DefaultArea
-	
+	MaxDefault[3] = DefaultArea /;
 EndFunction
+
+function ReloadMorphList()
+	; Reload json file
+	JsonUtil.Unload("Aroused Nips/MorphList.json")
+
+	; load defaults
+	MaxDefault = JsonUtil.FloatListToArray("Aroused Nips/MorphList.json", "DefaultValues")
+
+	; cache new values
+	float[] tempvalues = MaxDefault
+
+	int i = 0
+	int j = -1
+	
+	while i < MorphNames.Length
+		j = JsonUtil.StringListFind("Aroused Nips/MorphList.json", "MorphNames", MorphNames[i])
+		if j == -1 ; morph wasnt found in the list
+			; clear applied morphs
+			if TTT_ArousedNipsPlayerAlias.IsSlifInstalled
+				TTT_ArousedNipsPlayerAlias.SetBodyMorph(TTT_ArousedNipsPlayerAlias.PlayerRef, MorphNames[i], 0.0)
+			else
+				NiOverride.SetBodyMorph(TTT_ArousedNipsPlayerAlias.PlayerRef, MorphNames[i], TTT_ArousedNipsPlayerAlias.NIO_KEY, 0.0)
+			endif
+		else
+			; overwrite with existing values (if names match)
+			tempvalues[j] = MaxValue[i]
+		endif
+		i += 1
+	endWhile
+	MaxValue = tempvalues
+
+	; load morph names
+	MorphNames = JsonUtil.StringListToArray("Aroused Nips/MorphList.json", "MorphNames")
+endfunction

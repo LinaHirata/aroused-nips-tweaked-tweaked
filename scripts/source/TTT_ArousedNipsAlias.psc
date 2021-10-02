@@ -20,7 +20,7 @@ TTT_ArousedNipsInterfaceFrostfall Property FrostfallInt Auto
 
 Bool IsMmeInstalled
 Bool IsFrostfallInstalled
-Bool IsSlifInstalled = false
+Bool property IsSlifInstalled = false auto
 
 Float NipsTweakVersion
 Float[] RollAvg
@@ -55,8 +55,8 @@ Event OnPlayerLoadGame()
 	if !CheckNiOverride()
 		;NiO check fail
 		TTT_ArousedNipsMainQuest.isNioOk = false
-		debug.Notification("ArousedNips: NiOverride Version check failed, aborting.")
-		debug.Trace("TTT_ArousedNips: NiOverride Version check failed, aborting.")
+		debug.Notification("ArousedNips: NiOverride was not found, aborting.")
+		debug.Trace("TTT_ArousedNips: NiOverride was not found, aborting.")
 		return
 	Else
 		TTT_ArousedNipsMainQuest.isNioOk = true
@@ -101,7 +101,8 @@ Event OnPlayerLoadGame()
 EndEvent
 
 Bool Function CheckNiOverride()
-	Return SKSE.GetPluginVersion("NiOverride") >= NIO_VERSION && NiOverride.GetScriptVersion() >= NIO_SCRIPT_VERSION
+	;Return SKSE.GetPluginVersion("NiOverride") >= NIO_VERSION && NiOverride.GetScriptVersion() >= NIO_SCRIPT_VERSION
+	return nioverride.GetScriptVersion() as Bool
 EndFunction
 
 Event OnArousalComputed(string eventName, string argString, float argNum, form sender)
@@ -270,7 +271,7 @@ Function UpdateActor(Actor who, bool doDebug=false, int modifier=0)
 	EndIf
 	
 	int j = 0
-	while j<4
+	while j<TTT_ArousedNipsMainQuest.MorphNames.Length
 		float Value = TTT_ArousedNipsMainQuest.MaxValue[j] * Multiplier
 		If IsSlifInstalled
 			SetBodyMorph(who, TTT_ArousedNipsMainQuest.MorphNames[j], Value)

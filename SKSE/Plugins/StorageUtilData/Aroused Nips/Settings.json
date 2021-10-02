@@ -2,10 +2,6 @@
 	"float" : 
 	{
 		"commentnipsize" : 70,
-		"maxvalueone" : 1,
-		"maxvaluethree" : 0,
-		"maxvaluetwo" : 1.5,
-		"maxvaluezero" : -0.9,
 		"playerupdatefreq" : 10
 	},
 	"int" : 

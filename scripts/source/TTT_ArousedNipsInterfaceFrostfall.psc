@@ -22,10 +22,11 @@ Function PlayerLoadsGame()
 EndFunction
 
 Bool Function GetIsInterfaceActive()
-	If GetState() == "Installed"
-		Return true
-	EndIf
-	Return false
+	;If GetState() == "Installed"
+	;	Return true
+	;EndIf
+	;Return false
+	return GetState() == "Installed"
 EndFunction
 
 ; Installed =======================================
