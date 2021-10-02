@@ -51,7 +51,7 @@ function ReloadMorphList()
 	MaxDefault = JsonUtil.FloatListToArray("Aroused Nips/MorphList.json", "DefaultValues")
 
 	; cache new values
-	float[] tempvalues = MaxDefault
+	float[] tempvalues = JsonUtil.FloatListToArray("Aroused Nips/MorphList.json", "DefaultValues")
 
 	int i = 0
 	int j = -1
@@ -75,4 +75,5 @@ function ReloadMorphList()
 
 	; load morph names
 	MorphNames = JsonUtil.StringListToArray("Aroused Nips/MorphList.json", "MorphNames")
+	NiOverride.UpdateModelWeight(TTT_ArousedNipsPlayerAlias.PlayerRef)
 endfunction

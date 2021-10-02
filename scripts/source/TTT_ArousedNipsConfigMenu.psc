@@ -34,8 +34,14 @@ event OnVersionUpdate(int ver)
 	Debug.Trace("TTT_ArousedNips: Updating to " + version)
 
 	TTT_ArousedNipsMainQuest.Stop()
-	Utility.Wait(1)
+	Utility.Wait(1.0)
 	TTT_ArousedNipsMainQuest.Start()
+
+	NipsAlias.StopUpdates()
+	if PlayerUpdateFreq > 0
+		Utility.Wait(1.0)
+		NipsAlias.BeginUpdates()
+	endif
 endEvent
 
 event OnConfigInit()
@@ -106,17 +112,12 @@ event OnPageReset(string page)
 		AddHeaderOption("Version Checks")
 		AddToggleOption("NiOverride (Required)", TTT_ArousedNipsMainQuest.isNiOok)
 		AddToggleOption("SLAroused Redux (Required)", TTT_ArousedNipsMainQuest.isSLArousedok)
-		AddEmptyOption()
-		
-		AddHeaderOption("interfaces")
+		AddHeaderOption("Interfaces")
 		AddToggleOption("Frostfall interface", Frostfallint.GetIsinterfaceActive())
 		
 		AddHeaderOption("")
-		AddToggleOptionST("IgnoreMalesToggleST", "Ignore Males", TTT_ArousedNipsMainQuest.IgnoreMales)
-
-		AddEmptyOption()
 		AddToggleOptionST("DebugModeToggleST", "Debug mode", TTT_ArousedNipsMainQuest.DebugMode)
-		AddEmptyOption()
+		AddToggleOptionST("IgnoreMalesToggleST", "Ignore Males", TTT_ArousedNipsMainQuest.IgnoreMales)
 		AddToggleOptionST("SillyCommentsToggleST", "Nipple Comments", NpcComments)
 
 		AddSliderOptionST("CommentNipSizeSliderST", "Nipple Size For Comments: ", CommentNipSize, "{0}%")
@@ -320,12 +321,12 @@ endState
 ; ------------------------------------------------------------------------------------
 ; -------------------------------------- MORPHS --------------------------------------
 ; ------------------------------------------------------------------------------------
-event OnOptionSliderOpen(int option)
+event OnSliderOpenST()
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
     int _key = _stateName[1] as int
 
-	if _stateName[0] == "MorphMaxValueSliderST_"
+	if _stateName[0] == "MorphMaxValueSliderST"
 		SetSliderDialogRange(-range, range)
 		SetSliderDialoginterval(0.01)
 		SetSliderDialogStartValue(TTT_ArousedNipsMainQuest.MaxValue[_key])
@@ -333,34 +334,34 @@ event OnOptionSliderOpen(int option)
 	endif
 endEvent
 
-event OnOptionSliderAccept(int option, float value)
+event OnSliderAcceptST(float value)
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
     int _key = _stateName[1] as int
 
-	if _stateName[0] == "MorphMaxValueSliderST_"
+	if _stateName[0] == "MorphMaxValueSliderST"
 		TTT_ArousedNipsMainQuest.MaxValue[_key] = value
 		SetSliderOptionValueST(TTT_ArousedNipsMainQuest.MaxValue[_key], "{2}", false, _state)
 	endif
 endEvent
 
-event OnOptionDefault(int option)
+event OnDefaultST()
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
     int _key = _stateName[1] as int
 
-	if _stateName[0] == "MorphMaxValueSliderST_"
+	if _stateName[0] == "MorphMaxValueSliderST"
 		TTT_ArousedNipsMainQuest.MaxValue[_key] = TTT_ArousedNipsMainQuest.MaxDefault[_key]
 		SetSliderOptionValueST(TTT_ArousedNipsMainQuest.MaxValue[_key], "{2}", false, _state)
 	endif
 endEvent
 
-event OnOptionHighlight(int option)
+event OnHighlightST()
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
     int _key = _stateName[1] as int
 
-	if _stateName[0] == "MorphMaxValueSliderST_"
+	if _stateName[0] == "MorphMaxValueSliderST"
 		SetInfoText("Value of Morph " + TTT_ArousedNipsMainQuest.MorphNames[_key] + " at arousal 100")
 	else
 		SetInfoText("ArousedNips " + version + " by TTT.")
