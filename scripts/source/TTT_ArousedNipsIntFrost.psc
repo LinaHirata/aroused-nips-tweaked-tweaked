@@ -1,4 +1,4 @@
-Scriptname TTT_ArousedNipsIntFrost  Hidden 
+Scriptname TTT_ArousedNipsIntFrost  Hidden
 
 Float Function GetFfExposure() Global
 	Return FrostUtil.GetPlayerExposure()

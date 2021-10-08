@@ -21,6 +21,11 @@ TTT_ArousedNipsInterfaceFrostfall Property FrostfallInt Auto
 Bool IsMmeInstalled
 Bool IsFrostfallInstalled
 Bool property IsSlifInstalled = false auto
+bool property isMMEInstalledProp
+	bool function get()
+		return IsMmeInstalled
+	endFunction
+endProperty
 
 Float NipsTweakVersion
 Float[] RollAvg
@@ -49,8 +54,8 @@ Event OnPlayerLoadGame()
 		debug.Notification("ArousedNips: checking for requirements")
 		debug.Trace("TTT_ArousedNips: checking for requirements")
 	EndIf
-	
-	
+
+
 	;Check Requirements
 	if !CheckNiOverride()
 		;NiO check fail
@@ -61,7 +66,7 @@ Event OnPlayerLoadGame()
 	Else
 		TTT_ArousedNipsMainQuest.isNioOk = true
 	EndIf
-	
+
 	if (sla_Main.slaConfig.GetVersion() < 26 || sla_Main.slaConfig.GetVersion() > 20110000)
 		;Aroused version check fail
 		TTT_ArousedNipsMainQuest.isSLArousedOk = false
@@ -71,28 +76,28 @@ Event OnPlayerLoadGame()
 	Else
 		TTT_ArousedNipsMainQuest.isSLArousedOk = true
 	EndIf
-	
+
 	;success
-	TTT_ArousedNipsMainQuest.ResetDefaults()
-	
+	;TTT_ArousedNipsMainQuest.ResetDefaults()
+
 	RegisterForModevent("sla_UpdateComplete", "OnArousalComputed")
-	
+
 	RegisterForModEvent("StageStart", "OnStageStart")
-	
+
 	IF TTT_ArousedNipsMainQuest.DebugMode
 		debug.Notification("ArousedNips: requirements check successful")
 		debug.Trace("TTT_ArousedNips: requirements check successful")
 	EndIf
-	
+
 	; MME
 	IsMmeInstalled = (Game.GetModByName("MilkModNEW.esp") != 255)
-	
+
 	; Frostfall
 	IsFrostfallInstalled = (Game.GetModByName("Frostfall.esp") != 255)
-	
+
 	; SLIF
 	IsSlifInstalled = (Game.GetModByName("SexLab Inflation Framework.esp") != 255)
-	
+
 	If NipsTweakVersion < 1.1
 		RollAvg = new Float[50]
 		NipsTweakVersion = 1.1
@@ -112,11 +117,11 @@ Event OnArousalComputed(string eventName, string argString, float argNum, form s
 		debug.Notification("ArousedNips: Arousal event")
 		debug.Trace("TTT_ArousedNips: Arousal event")
 	EndIf
-	
-	
+
+
 	;player needs an extrawurst
 	UpdateActor(PlayerRef, doDebug)
-	
+
 	if(argNum <= 0)
 		If doDebug
 			debug.Notification("ArousedNips: No aroused NPCs nearby, updating player only")
@@ -124,14 +129,14 @@ Event OnArousalComputed(string eventName, string argString, float argNum, form s
 		EndIf
 		return
 	endif
-	
+
 	;;modifying that nice Redux example code:
 	;int myLockNum = Utility.randomInt(10, 32000)
 	int myLockNum = 7 ; "That value is constrained from 0 to 7, in SLAX" - https://www.loverslab.com/topic/107720-monomans-mod-tweaks/?do=findComment&comment=3053379
-	Actor [] myActors = sla_Main.getLoadedActors(myLockNum) 
+	Actor [] myActors = sla_Main.getLoadedActors(myLockNum)
 	;This could be null if called at the wrong time
 	;Debug.Trace("TTT: myActors: " + myActors)
-	
+
 	int t = 0
 	while(myActors.Length == 0 && t < 5)
 		If doDebug
@@ -142,7 +147,7 @@ Event OnArousalComputed(string eventName, string argString, float argNum, form s
 		myActors = sla_Main.getLoadedActors(myLockNum)
 		t += 1
 	endWhile
-	
+
 	Form [] theActors
 	If myActors.Length > 0
 
@@ -151,13 +156,13 @@ Event OnArousalComputed(string eventName, string argString, float argNum, form s
 ;/		SLAX returns a variable sized array
 		theActors = new Actor[20]
 		int i = 0;
-		;Copy the actors to a private array            
+		;Copy the actors to a private array
 		while(i < 20)
 			theActors[i] = myActors[i]
 			i+= 1
 		endwhile
 /;
-		
+
 		TTT_ArousedNipsArrayCopyFl.Revert()
 		i = 0
 		While i < myActors.Length
@@ -165,31 +170,31 @@ Event OnArousalComputed(string eventName, string argString, float argNum, form s
 			i += 1
 		EndWhile
 		theActors = TTT_ArousedNipsArrayCopyFl.ToArray()
-		
-		
+
+
 		;It is imparative to call unlock
 		sla_Main.UnlockScan(myLockNum)
-		
-		;Now do whatever I want with those actors  
+
+		;Now do whatever I want with those actors
 	Else
 		If doDebug
 			debug.Notification("Warning: ArousedNips gave up accessing Aroused's actor array.")
 		EndIf
 		debug.Trace("Warning: TTT_ArousedNips gave up accessing Aroused's actor array.")
 		;debug.Messagebox("Warning: TTT_ArousedNips gave up accessing Aroused's actor array.")
-		
+
 		Debug.Trace("TTT: Failed to get actors this time around")
 		return
 	EndIf
 
-	int i = 0          
+	int i = 0
 	while i < theActors.Length
 		if theActors[i] as Actor ;make sure there is an actor
 			UpdateActor(theActors[i] as Actor, doDebug)
 		EndIf
 		i+= 1
 	endwhile
-	
+
 	If doDebug
 		debug.Notification("ArousedNips: Arousal event end")
 		debug.Trace("TTT_ArousedNips: Arousal event end")
@@ -198,6 +203,9 @@ endEvent
 
 Function UpdateActor(Actor who, bool doDebug=false, int modifier=0)
 	{Set morphs of "who" according to their arousal, offset by "modifier".}
+	if TTT_ArousedNipsMainQuest.IgnoreNPCs && who != PlayerRef
+		return
+	endif
 
 	If TTT_ArousedNipsMainQuest.IgnoreMales && (Who.GetLeveledActorBase().GetSex() == 0)
 		If doDebug
@@ -206,20 +214,20 @@ Function UpdateActor(Actor who, bool doDebug=false, int modifier=0)
 		EndIF
 		return
 	EndIf
-	
+
 	;int Arousal = who.GetFactionRank(sla_Framework.slaArousal)
 	Float Arousal = who.GetFactionRank(sla_Framework.slaArousal)
-	
+
 	If doDebug
 		debug.Notification("ArousedNips: "+who.GetLeveledActorBase().GetName()+" has Arousal "+Arousal+"(+" + modifier +")")
 		debug.Trace("TTT_ArousedNips: "+who.GetLeveledActorBase().GetName()+" has Arousal "+Arousal+"(+" + modifier +")")
 	EndIF
-	
+
 	If Arousal < 0 && who != PlayerRef
 		return
 	EndIf
-	
-	
+
+
 	Arousal = Arousal + modifier
 
 	If Arousal > 100
@@ -227,7 +235,7 @@ Function UpdateActor(Actor who, bool doDebug=false, int modifier=0)
 	ElseIf Arousal < 0
 		Arousal = 0
 	EndIf
-	
+
 	Float Multiplier = (Arousal / 100.0)
 	If who == PlayerRef
 		Int NumOfUpdatesRollAvg = Menu.RollAvgCount ; Number of updates to calculate the rolling average from
@@ -255,21 +263,21 @@ Function UpdateActor(Actor who, bool doDebug=false, int modifier=0)
 		If MilkValue > Multiplier
 			Multiplier = MilkValue
 		EndIf
-		
+
 		;Debug.Notification("Arousal: " + (Arousal / 100.0) + ". ColdValue: " + ColdValue + ". MilkValue: " + MilkValue)
 		Float NipCurrent = Multiplier
 		ShiftArrayLeft(RollAvg, NumOfUpdatesRollAvg)
 		RollAvg[NumOfUpdatesRollAvg - 1] = Multiplier
 		Multiplier = AddArray(RollAvg, NumOfUpdatesRollAvg) / NumOfUpdatesRollAvg
 		;Debug.Notification("Nip: Current: " + NipCurrent + ". Avg: " + Multiplier)
-		
+
 		If Multiplier > (Menu.CommentNipSize / 100.0)
 			TTT_ArousedNipsMainQuest.SillyComments = true
 		Else
 			TTT_ArousedNipsMainQuest.SillyComments = false
 		EndIf
 	EndIf
-	
+
 	int j = 0
 	while j<TTT_ArousedNipsMainQuest.MorphNames.Length
 		float Value = TTT_ArousedNipsMainQuest.MaxValue[j] * Multiplier
@@ -285,7 +293,7 @@ Function UpdateActor(Actor who, bool doDebug=false, int modifier=0)
 		j+=1
 	EndWhile
 	NiOverride.UpdateModelWeight(who)
-	
+
 EndFunction
 
 Function SetBodyMorph(Actor kActor, String morphName, float value)
@@ -317,22 +325,22 @@ EndFunction
 
 Event OnStageStart(string eventName, string argString, float argNum, form sender)
 	{Experimental.}
-	
+
 	Actor[] actorList = SexLabQuestFramework.HookActors(argString)
-	
+
 	If (actorList.length < 1)
 		return
 	EndIf
-	
+
 	Utility.Wait(1)
 	;giving Aroused time to do its thing.
-	
+
 	int i = 0
 	While i < actorList.length
 		UpdateActor(actorList[i], TTT_ArousedNipsMainQuest.DebugMode, 50)
 		i += 1
 	EndWhile
-	
+
 EndEvent
 
 Function BeginUpdates()

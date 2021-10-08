@@ -1,4 +1,4 @@
-Scriptname TTT_ArousedNipsInterfaceFrostfall extends Quest  
+Scriptname TTT_ArousedNipsInterfaceFrostfall extends Quest
 
 Event OnInit()
 	RegisterForModEvent("TTT_ArousedNips_LoadGame", "OnTTT_ArousedNips_LoadGame")
@@ -13,7 +13,7 @@ Function PlayerLoadsGame()
 		If GetState() != "Installed"
 			GoToState("Installed")
 		EndIf
-	
+
 	Else
 		If GetState() != ""
 			GoToState("")

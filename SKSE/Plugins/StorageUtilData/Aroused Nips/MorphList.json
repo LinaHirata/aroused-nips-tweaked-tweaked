@@ -7,18 +7,8 @@
 			"NippleLength",
 			"NipplePerkiness",
 			"NippleAreola",
-			"ClitorisErection"
-		]
-	},
-	"floatList" : 
-	{
-		"defaultvalues" : 
-		[
-			-0.9,
-			1.0,
-			1.5,
-			0.5,
-			1.0
+			"ClitorisErection",
+			"BreastsFantasy"
 		]
 	}
 }
