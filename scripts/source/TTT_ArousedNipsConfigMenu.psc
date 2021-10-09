@@ -21,7 +21,7 @@ bool toggleDebugSpell = false
 int function GetVersion()
 	;format = (M)MmmPP
 	;12345 => 1.23.45
-	return 10203
+	return 10300
 endFunction
 
 event OnVersionUpdate(int ver)
@@ -95,8 +95,8 @@ event OnPageReset(string page)
 		AddSliderOptionST("CommentNipSizeSliderST", "Nipple Size For Comments: ", CommentNipSize, "{0}%")
 		AddEmptyOption()
 
-		AddToggleOptionST("IgnoreMalesToggleST", "Ignore Males", TTT_ArousedNipsMainQuest.IgnoreMales)
 		AddToggleOptionST("IgnoreNPCsToggleST", "Ignore NPCs", TTT_ArousedNipsMainQuest.IgnoreNPCs)
+		AddToggleOptionST("IgnoreMalesToggleST", "Ignore Males", TTT_ArousedNipsMainQuest.IgnoreMales)
 		AddEmptyOption()
 
 		AddSliderOptionST("PlayerUpdateFreqSliderST", "Player Update Frequency: ", PlayerUpdateFreq, "{0} seconds")
@@ -110,27 +110,27 @@ event OnPageReset(string page)
 		SetCursorPosition(1)
 		AddHeaderOption("Dependencies")
 		AddToggleOption("NiOverride (Required)", TTT_ArousedNipsMainQuest.isNiOok)
-		AddToggleOption("SLAroused Redux (Required)", TTT_ArousedNipsMainQuest.isSLArousedok)
-		AddToggleOption("SL Inflation Framework", NipsAlias.IsSlifInstalled)
-		AddToggleOption("Milk Mod Economy", NipsAlias.isMMEInstalledProp)
+		AddToggleOption("SexLab Aroused (Required)", TTT_ArousedNipsMainQuest.isSLArousedok)
 		AddEmptyOption()
 
 		AddHeaderOption("Interfaces")
-		AddToggleOption("Frostfall interface", Frostfallint.GetIsinterfaceActive())
+		AddToggleOption("Inflation Framework", NipsAlias.IsSlifInstalled)
+		AddToggleOption("Frostfall", Frostfallint.GetIsinterfaceActive())
+		AddToggleOption("Milk Mod Economy", NipsAlias.isMMEInstalledProp)
 		AddEmptyOption()
 		
 		AddHeaderOption("")
 		AddToggleOptionST("DebugModeToggleST", "Debug mode", TTT_ArousedNipsMainQuest.DebugMode)
 	elseif page == "Morphs"
-		AddInputOptionST("AddMoprphKeyInputST", "Add Morh Key", "")
+		AddInputOptionST("AddMoprphKeyInputST", "Add Morph", "")
 		AddTextOptionST("UpdateMorphsTextST", "Reload Morph List", "")
-		AddHeaderOption("Morph value at 100 arousal")
+		AddHeaderOption("Morph at 100 arousal")
 		AddHeaderOption("")
 
 		int i = 0
 		while i < TTT_ArousedNipsMainQuest.MorphNames.Length
 			AddSliderOptionST("MorphMaxValueSliderST_" + i, TTT_ArousedNipsMainQuest.MorphNames[i], TTT_ArousedNipsMainQuest.MaxValue[i], "{2}", hasReqFlag)
-			AddTextOptionST("DeleteMorphKeyTextST_" + i, "Delete key: " + TTT_ArousedNipsMainQuest.MorphNames[i], "")
+			AddTextOptionST("DeleteMorphKeyTextST_" + i, "Delete " + TTT_ArousedNipsMainQuest.MorphNames[i], "")
 			i += 1
 		endWhile
 
@@ -144,86 +144,6 @@ endEvent
 ; ------------------------------------------------------------------------------------
 ; -------------------------------------- STATES --------------------------------------
 ; ------------------------------------------------------------------------------------
-state UpdateMorphsTextST
-	event OnSelectST()
-		SetTextOptionValueST("Working...")
-
-		TTT_ArousedNipsMainQuest.ReloadMorphList()
-		ForcePageReset()
-
-		SetTextOptionValueST("DONE")
-	endEvent
-
-	event OnHighlightST()
-		SetInfoText("Reload Morph list from the json file")
-	endEvent
-endState
-
-state AddMoprphKeyInputST
-	event OnInputAcceptST(string value)
-		JsonUtil.StringListAdd("Aroused Nips/MorphList.json", "MorphNames", value, false)
-		;JsonUtil.FloatListAdd("Aroused Nips/MorphList.json", "DefaultValues", 0.0, false)
-		JsonUtil.Save("Aroused Nips/MorphList.json")
-
-		TTT_ArousedNipsMainQuest.ReloadMorphList()
-		ForcePageReset()
-	endEvent
-
-	event OnHighlightST()
-		SetInfoText("ArousedNips " + version + " by TTT.")
-	endEvent
-endState
-
-state IgnoreNPCsToggleST
-	event OnSelectST()
-		TTT_ArousedNipsMainQuest.IgnoreNPCs = !TTT_ArousedNipsMainQuest.IgnoreNPCs
-		SetToggleOptionValueST(TTT_ArousedNipsMainQuest.IgnoreNPCs)
-	endEvent
-
-	event OnDefaultST()
-		TTT_ArousedNipsMainQuest.IgnoreNPCs = true
-		SetToggleOptionValueST(true)
-	endEvent
-
-	event OnHighlightST()
-		SetInfoText("Do not process NPCs.")
-	endEvent
-endState
-
-state IgnoreMalesToggleST
-	event OnSelectST()
-		TTT_ArousedNipsMainQuest.IgnoreMales = !TTT_ArousedNipsMainQuest.IgnoreMales
-		SetToggleOptionValueST(TTT_ArousedNipsMainQuest.IgnoreMales)
-	endEvent
-
-	event OnDefaultST()
-		TTT_ArousedNipsMainQuest.IgnoreMales = true
-		SetToggleOptionValueST(true)
-	endEvent
-
-	event OnHighlightST()
-		SetInfoText("ArousedNips " + version + " by TTT.")
-	endEvent
-endState
-
-state DebugModeToggleST
-	event OnSelectST()
-		TTT_ArousedNipsMainQuest.DebugMode = !TTT_ArousedNipsMainQuest.DebugMode
-		SetToggleOptionValueST(TTT_ArousedNipsMainQuest.DebugMode)
-		toggleDebugSpell = true
-	endEvent
-
-	event OnDefaultST()
-		TTT_ArousedNipsMainQuest.DebugMode = false
-		SetToggleOptionValueST(false)
-		toggleDebugSpell = true
-	endEvent
-
-	event OnHighlightST()
-		SetInfoText("Will print debug info to screen and log.")
-	endEvent
-endState
-
 state SillyCommentsToggleST
 	event OnSelectST()
 		NpcComments = !NpcComments
@@ -270,6 +190,38 @@ state CommentNipSizeSliderST
 
 	event OnHighlightST()
 		SetInfoText("What percentage of maximum size your nipples must be for NPCs to begin commenting on it")
+	endEvent
+endState
+
+state IgnoreNPCsToggleST
+	event OnSelectST()
+		TTT_ArousedNipsMainQuest.IgnoreNPCs = !TTT_ArousedNipsMainQuest.IgnoreNPCs
+		SetToggleOptionValueST(TTT_ArousedNipsMainQuest.IgnoreNPCs)
+	endEvent
+
+	event OnDefaultST()
+		TTT_ArousedNipsMainQuest.IgnoreNPCs = true
+		SetToggleOptionValueST(true)
+	endEvent
+
+	event OnHighlightST()
+		SetInfoText("Process only the Player.\nEnabling this doesn't reset morphs already applied to NPCs.")
+	endEvent
+endState
+
+state IgnoreMalesToggleST
+	event OnSelectST()
+		TTT_ArousedNipsMainQuest.IgnoreMales = !TTT_ArousedNipsMainQuest.IgnoreMales
+		SetToggleOptionValueST(TTT_ArousedNipsMainQuest.IgnoreMales)
+	endEvent
+
+	event OnDefaultST()
+		TTT_ArousedNipsMainQuest.IgnoreMales = true
+		SetToggleOptionValueST(true)
+	endEvent
+
+	event OnHighlightST()
+		SetInfoText("Do not process male NPCs.\nEnabling this doesn't reset morphs already applied to NPCs.")
 	endEvent
 endState
 
@@ -357,6 +309,60 @@ state ImportSettingsTextST
 	endEvent
 endState
 
+state DebugModeToggleST
+	event OnSelectST()
+		TTT_ArousedNipsMainQuest.DebugMode = !TTT_ArousedNipsMainQuest.DebugMode
+		SetToggleOptionValueST(TTT_ArousedNipsMainQuest.DebugMode)
+		toggleDebugSpell = true
+	endEvent
+
+	event OnDefaultST()
+		TTT_ArousedNipsMainQuest.DebugMode = false
+		SetToggleOptionValueST(false)
+		toggleDebugSpell = true
+	endEvent
+
+	event OnHighlightST()
+		SetInfoText("Print debug info to screen and log.")
+	endEvent
+endState
+
+state AddMoprphKeyInputST
+	event OnInputAcceptST(string value)
+		float default = 0.0
+		if value == "NippleSize"
+			default = -0.75
+		elseif value == "NippleLength"
+			default = 1.0
+		elseif value == "NipplePerkiness"
+			default = 1.5
+		elseif value == "ClitorisErection"
+			default = 1.0
+		endif
+
+		JsonUtil.SetPathFloatValue("Aroused Nips/MorphList.json", "." + value, default)
+		JsonUtil.Save("Aroused Nips/MorphList.json")
+
+		TTT_ArousedNipsMainQuest.ReloadMorphList()
+		ForcePageReset()
+	endEvent
+endState
+
+state UpdateMorphsTextST
+	event OnSelectST()
+		SetTextOptionValueST("Working...")
+
+		TTT_ArousedNipsMainQuest.ReloadMorphList()
+		ForcePageReset()
+
+		SetTextOptionValueST("DONE")
+	endEvent
+
+	event OnHighlightST()
+		SetInfoText("Reload Morphs from the json file.\nUse if you have manually edited MorphList.json")
+	endEvent
+endState
+
 
 
 ; ------------------------------------------------------------------------------------
@@ -371,8 +377,7 @@ event OnSliderOpenST()
 		SetSliderDialogRange(-range, range)
 		SetSliderDialoginterval(0.01)
 		SetSliderDialogStartValue(TTT_ArousedNipsMainQuest.MaxValue[_key])
-		SetSliderDialogDefaultValue(0.0)
-		;SetSliderDialogDefaultValue(TTT_ArousedNipsMainQuest.MaxDefault[_key])
+		SetSliderDialogDefaultValue(TTT_ArousedNipsMainQuest.MaxDefault[_key])
 	endif
 endEvent
 
@@ -394,9 +399,8 @@ event OnSelectST()
 
 	if _stateName[0] == "DeleteMorphKeyTextST"
 		SetTextOptionValueST("Working...")
-		if ShowMessage("Are you use you want to delete " + TTT_ArousedNipsMainQuest.MorphNames[_key] + " key?")
-			JsonUtil.StringListRemoveAt("Aroused Nips/MorphList.json", "MorphNames", _key)
-			;JsonUtil.FloatListRemoveAt("Aroused Nips/MorphList.json", "DefaultValues", _key)
+		if ShowMessage("Are you sure you want to delete '" + TTT_ArousedNipsMainQuest.MorphNames[_key] + "'' morph?")
+			JsonUtil.ClearPath("Aroused Nips/MorphList.json", "." + TTT_ArousedNipsMainQuest.MorphNames[_key])
 			JsonUtil.Save("Aroused Nips/MorphList.json")
 
 			TTT_ArousedNipsMainQuest.ReloadMorphList()
@@ -413,8 +417,7 @@ event OnDefaultST()
     int _key = _stateName[1] as int
 
 	if _stateName[0] == "MorphMaxValueSliderST"
-		TTT_ArousedNipsMainQuest.MaxValue[_key] = 0.0
-		;TTT_ArousedNipsMainQuest.MaxValue[_key] = TTT_ArousedNipsMainQuest.MaxDefault[_key]
+		TTT_ArousedNipsMainQuest.MaxValue[_key] = TTT_ArousedNipsMainQuest.MaxDefault[_key]
 		SetSliderOptionValueST(TTT_ArousedNipsMainQuest.MaxValue[_key], "{2}", false, _state)
 	endif
 endEvent
@@ -425,11 +428,9 @@ event OnHighlightST()
     int _key = _stateName[1] as int
 
 	if _stateName[0] == "MorphMaxValueSliderST"
-		SetInfoText("Value of Morph " + TTT_ArousedNipsMainQuest.MorphNames[_key] + " at arousal 100")
-	;elseif _stateName[0] == "DeleteMorphKeyTextST"
-	;	SetInfoText("Delete " + TTT_ArousedNipsMainQuest.MorphNames[_key] + " key")
-	else
-		SetInfoText("ArousedNips " + version + " by TTT.")
+		SetInfoText(TTT_ArousedNipsMainQuest.MorphNames[_key] + " at 100 arousal.\nDefault: " + TTT_ArousedNipsMainQuest.MaxDefault[_key])
+	elseif _stateName[0] == "DeleteMorphKeyTextST"
+		SetInfoText("NOTE: Deleting morphs will not clear them from NPCs its already been applied to.\nIf you are using SLIF you can delete them manually in its MCM if need be.")
 	endif
 endEvent
 

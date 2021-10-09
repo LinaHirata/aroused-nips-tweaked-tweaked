@@ -15,7 +15,7 @@ bool Property Isinitialized = false Auto Hidden
 
 string[] Property MorphNames Auto Hidden
 float[] Property MaxValue Auto Hidden
-;float[] Property MaxDefault Auto Hidden
+float[] Property MaxDefault Auto Hidden
 
 Event OnInit()
 {First-time setup. Setting all defaults.}
@@ -47,23 +47,33 @@ EndFunction
 function ReloadMorphList()
 	; Reload json file
 	JsonUtil.Unload("Aroused Nips/MorphList.json")
-
-	; load defaults
-	;MaxDefault = JsonUtil.FloatListToArray("Aroused Nips/MorphList.json", "DefaultValues")
+	if !JsonUtil.IsGood("Aroused Nips/MorphList.json")
+		Debug.MessageBox("Aroused Nips: Couldnt load MophList.json.\n\n" + JsonUtil.GetErrors("Aroused Nips/MorphList.json") + "\nPlease check its formatting and data structure and reload the file using a button in MCM menu.\nFormat and structure referece can be found in the example file (MorphListExample.json)")
+		return
+	endif
 
 	; cache new values
-	;float[] tempvalues = JsonUtil.FloatListToArray("Aroused Nips/MorphList.json", "DefaultValues")
-	float[] tempvalues = Utility.CreateFloatArray(JsonUtil.StringListCount("Aroused Nips/MorphList.json", "MorphNames"))
+	string[] tempnames = JsonUtil.PathMembers("Aroused Nips/MorphList.json", ".")
+	float[] tempvalues = Utility.CreateFloatArray(tempnames.Length)
+	MaxDefault = Utility.CreateFloatArray(tempnames.Length)
 
 	int i = 0
-	int j = -1
+	float tempvalue = 0.0
+	while i < tempnames.Length
+		tempvalue = JsonUtil.GetPathFloatValue("Aroused Nips/MorphList.json", "." + tempnames[i], 0.0)
+		tempvalues[i] = tempvalue
+		MaxDefault[i] = tempvalue
+		i += 1
+	endWhile
 
+	; clear old morphs and add new morphs keeping our existing data
+	i = 0
+	int j = -1
 	while i < MorphNames.Length
-		j = JsonUtil.StringListFind("Aroused Nips/MorphList.json", "MorphNames", MorphNames[i])
-		if j == -1 ; morph wasnt found in the list
+		j = tempnames.Find(MorphNames[i])
+		if j < 0 ; morph wasnt found in the list
 			; clear applied morphs
 			if TTT_ArousedNipsPlayerAlias.IsSlifInstalled
-				;TTT_ArousedNipsPlayerAlias.SetBodyMorph(TTT_ArousedNipsPlayerAlias.PlayerRef, MorphNames[i], 0.0)
 				int SLIF_event = ModEvent.Create("SLIF_unregisterMorph")
 				If (SLIF_event)
 					ModEvent.PushForm(SLIF_event, TTT_ArousedNipsPlayerAlias.PlayerRef)
@@ -72,7 +82,6 @@ function ReloadMorphList()
 					ModEvent.Send(SLIF_event)
 				EndIf
 			else
-				; NiOverride.SetBodyMorph(TTT_ArousedNipsPlayerAlias.PlayerRef, MorphNames[i], TTT_ArousedNipsPlayerAlias.NIO_KEY, 0.0)
 				NiOverride.ClearBodyMorph(TTT_ArousedNipsPlayerAlias.PlayerRef, MorphNames[i], TTT_ArousedNipsPlayerAlias.NIO_KEY)
 			endif
 		else
@@ -81,9 +90,11 @@ function ReloadMorphList()
 		endif
 		i += 1
 	endWhile
-	MaxValue = tempvalues
 
-	; load morph names
-	MorphNames = JsonUtil.StringListToArray("Aroused Nips/MorphList.json", "MorphNames")
+	; set actual values to be used
+	MorphNames = tempnames
+	MaxValue = tempvalues
+	
+	; update player mophs to reflect changes (in case morphs were removed)
 	NiOverride.UpdateModelWeight(TTT_ArousedNipsPlayerAlias.PlayerRef)
 endfunction
