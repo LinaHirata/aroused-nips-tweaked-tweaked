@@ -1,7 +1,11 @@
 {
-	"ClitorisErection" : 1.0,
-	"NippleAreola" : 0.0,
-	"NippleLength" : 1.0,
-	"NipplePerkiness" : 1.5,
-	"NippleSize" : -0.75
+	"female" : 
+	{
+		"ClitorisErection" : 1.0,
+		"NippleAreola" : 0.0,
+		"NippleLength" : 1.0,
+		"NipplePerkiness" : 1.5,
+		"NippleSize" : -0.75
+	},
+	"male" : {}
 }
