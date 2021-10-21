@@ -1,5 +1,7 @@
 scriptname TTT_ArousedNipsConfigMenu extends SKI_ConfigBase
 
+import StorageUtil
+
 TTT_ArousedNipsinterfaceFrostfall Property Frostfallint Auto
 TTT_ArousedNipsQuest Property TTT_ArousedNipsMainQuest Auto
 Spell Property TTT_ArousedNipsDebugSpell Auto
@@ -11,17 +13,17 @@ TTT_ArousedNipsAlias Property NipsAlias Auto
 
 float Property PlayerUpdateFreq = 10.0 Auto Hidden
 int Property RollAvgCount = 4 Auto Hidden
+
 float Property CommentNipSize = 70.0 Auto Hidden
 bool NpcComments = true
 
-int hasReqFlag
 string version
-bool toggleDebugSpell = false
+string storageKey
 
 int function GetVersion()
 	;format = (M)MmmPP
 	;12345 => 1.23.45
-	return 10301
+	return 10302
 endFunction
 
 event OnVersionUpdate(int ver)
@@ -63,31 +65,20 @@ event OnConfigRegister()
 endEvent
 
 event OnConfigOpen()
-	Pages = new string[4]
+	Pages = new string[5]
 	pages[0] = "Preferences"
 	pages[1] = "Female Morphs"
 	pages[2] = "Male Morphs"
-	pages[3] = "Affected Actors"
-
-	bool isOk = TTT_ArousedNipsMainQuest.isNioOk && TTT_ArousedNipsMainQuest.isSLArousedOk
-
-	hasReqFlag = OPTION_FLAG_DISABLED * (!isOk) as int
+	pages[3] = "Female Actors"
+	pages[4] = "Male Actors"
 endEvent
 
 event OnConfigClose()
-	if toggleDebugSpell
-		if TTT_ArousedNipsMainQuest.DebugMode
-			Game.GetPlayer().AddSpell(TTT_ArousedNipsDebugSpell)
-		else
-			Game.GetPlayer().RemoveSpell(TTT_ArousedNipsDebugSpell)
-		endif
-		toggleDebugSpell = false
-	endif
 endEvent
 
 event OnPageReset(string page)
 	SetTitleText("ArousedNips " + version)
-	if !TTT_ArousedNipsMainQuest.isNiOok || !TTT_ArousedNipsMainQuest.isSLArousedok
+	if !(TTT_ArousedNipsMainQuest.isNiOok || TTT_ArousedNipsMainQuest.isSLArousedok)
 		AddHeaderOption("Dependencies")
 		AddToggleOption("NiOverride (Required)", TTT_ArousedNipsMainQuest.isNiOok)
 		AddToggleOption("SexLab Aroused (Required)", TTT_ArousedNipsMainQuest.isSLArousedok)
@@ -126,51 +117,49 @@ event OnPageReset(string page)
 		AddTextOptionST("ExportSettingsTextST", "Export Settings ", "")
 		AddTextOptionST("ImportSettingsTextST", "Import Settings", "")
 	elseif page == "Female Morphs"
-		AddInputOptionST("AddMorphKeyInputST", "Add Morph", "")
-		AddTextOptionST("UpdateMorphsTextST", "Reload Morph List", "")
-		AddHeaderOption("Morph at 100 arousal")
-		AddHeaderOption("")
-
-		int i = 0
-		while i < TTT_ArousedNipsMainQuest.MorphNames.Length
-			AddSliderOptionST("MorphMaxValueSliderST_" + i, TTT_ArousedNipsMainQuest.MorphNames[i], TTT_ArousedNipsMainQuest.MaxValue[i], "{2}", hasReqFlag)
-			AddTextOptionST("DeleteMorphKeyTextST_" + i, "Delete " + TTT_ArousedNipsMainQuest.MorphNames[i], "")
-			i += 1
-		endWhile
+		storageKey = "female"
+		FillMorphList()
 	elseif page == "Male Morphs"
-		AddInputOptionST("AddMaleMorphKeyInputST", "Add Morph", "")
-		AddTextOptionST("UpdateMorphsTextST", "Reload Morph List", "")
-		AddHeaderOption("Morph at 100 arousal")
-		AddHeaderOption("")
-
-		int i = 0
-		while i < TTT_ArousedNipsMainQuest.MaleMorphNames.Length
-			AddSliderOptionST("MaleMorphMaxValueSliderST_" + i, TTT_ArousedNipsMainQuest.MaleMorphNames[i], TTT_ArousedNipsMainQuest.MaleMaxValue[i], "{2}", hasReqFlag)
-			AddTextOptionST("MaleDeleteMorphKeyTextST_" + i, "Delete " + TTT_ArousedNipsMainQuest.MaleMorphNames[i], "")
-			i += 1
-		endWhile
-	elseif page == "Affected Actors"
-		int k = 0
-		ActorBase _actor
-		while k < StorageUtil.FormListCount(none, "TTT_ArousedNips_FemaleActors")
-			_actor = (StorageUtil.FormListGet(none, "TTT_ArousedNips_FemaleActors", k) as Actor).GetLeveledActorBase()
-			if _actor
-				AddTextOption(_actor.GetName(), "")
-			endif
-			k += 1
-		endWhile
-
-		SetCursorPosition(1)
-		k = 0
-		while k < StorageUtil.FormListCount(none, "TTT_ArousedNips_MaleActors")
-			_actor = (StorageUtil.FormListGet(none, "TTT_ArousedNips_MaleActors", k) as Actor).GetLeveledActorBase()
-			if _actor
-				AddTextOption(_actor.GetName(), "")
-			endif
-			k += 1
-		endWhile
+		storageKey = "male"
+		FillMorphList()
+	elseif page == "Female Actors"
+		storageKey = "female"
+		FillActorList()
+	elseif page == "Male Actors"
+		storageKey = "male"
+		FillActorList()
 	endif
 endEvent
+
+function FillMorphList()
+	AddInputOptionST("AddMorphKeyInputST", "Add Morph", "")
+	AddTextOptionST("UpdateMorphsTextST", "Reload Morph List", "")
+	AddHeaderOption("Morph at 100 arousal")
+	AddHeaderOption("")
+
+	int i = 0
+	while i < StringListCount(none, "TTT_ArousedNips_Morphs_" + storageKey)
+		string morph = StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, i)
+		float value = FloatListGet(none, "TTT_ArousedNips_Values_" + storageKey, i)
+
+		AddSliderOptionST("MorphMaxValueSliderST_" + i, morph, value, "{2}")
+		AddTextOptionST("DeleteMorphKeyTextST_" + i, "Delete " + morph, "")
+		i += 1
+	endWhile
+endFunction
+
+function FillActorList()
+	SetCursorFillMode(LEFT_TO_RIGHT)
+	int i = 0
+	Actor _actor
+	while i < FormListCount(none, "TTT_ArousedNips_Actors_" + storageKey)
+		_actor = FormListGet(none, "TTT_ArousedNips_Actors_" + storageKey, i) as Actor
+		if _actor
+			AddTextOptionST("ClearActorTextST_" + i, _actor.GetLeveledActorBase().GetName() + " | " + _actor.GetFormID(), "")
+		endif
+		i += 1
+	endWhile
+endFunction
 
 
 
@@ -378,13 +367,11 @@ state DebugModeToggleST
 	event OnSelectST()
 		TTT_ArousedNipsMainQuest.DebugMode = !TTT_ArousedNipsMainQuest.DebugMode
 		SetToggleOptionValueST(TTT_ArousedNipsMainQuest.DebugMode)
-		toggleDebugSpell = true
 	endEvent
 
 	event OnDefaultST()
 		TTT_ArousedNipsMainQuest.DebugMode = false
 		SetToggleOptionValueST(false)
-		toggleDebugSpell = true
 	endEvent
 
 	event OnHighlightST()
@@ -394,42 +381,14 @@ endState
 
 state AddMorphKeyInputST
 	event OnInputAcceptST(string value)
-		float default = 0.0
-		if value == "NippleSize"
-			default = -0.75
-		elseif value == "NippleLength"
-			default = 1.0
-		elseif value == "NipplePerkiness"
-			default = 1.5
-		elseif value == "ClitorisErection"
-			default = 1.0
+		if JsonUtil.CanResolvePath("Aroused Nips/MorphList.json", "." + storageKey + "." + value)
+			return
 		endif
 
-		JsonUtil.SetPathFloatValue("Aroused Nips/MorphList.json", ".female." + value, default)
+		JsonUtil.SetPathFloatValue("Aroused Nips/MorphList.json", "." + storageKey + "." + value, GetDefaultValue(value, storageKey))
 		JsonUtil.Save("Aroused Nips/MorphList.json")
 
-		TTT_ArousedNipsMainQuest.ReloadMorphList()
-		ForcePageReset()
-	endEvent
-endState
-
-state AddMaleMorphKeyInputST
-	event OnInputAcceptST(string value)
-		float default = 0.0
-		if value == "NippleSize"
-			default = -0.75
-		elseif value == "NippleLength"
-			default = 1.0
-		elseif value == "NipplePerkiness"
-			default = 1.5
-		elseif value == "ClitorisErection"
-			default = 1.0
-		endif
-
-		JsonUtil.SetPathFloatValue("Aroused Nips/MorphList.json", ".male." + value, default)
-		JsonUtil.Save("Aroused Nips/MorphList.json")
-
-		TTT_ArousedNipsMainQuest.ReloadMorphList()
+		TTT_ArousedNipsMainQuest.ReloadMorphList(storageKey)
 		ForcePageReset()
 	endEvent
 endState
@@ -438,7 +397,7 @@ state UpdateMorphsTextST
 	event OnSelectST()
 		SetTextOptionValueST("Working...")
 
-		TTT_ArousedNipsMainQuest.ReloadMorphList()
+		TTT_ArousedNipsMainQuest.ReloadMorphList(storageKey)
 		ForcePageReset()
 
 		SetTextOptionValueST("DONE")
@@ -457,90 +416,83 @@ endState
 event OnSliderOpenST()
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
-    int _key = _stateName[1] as int
+    int _index = _stateName[1] as int
 
 	if _stateName[0] == "MorphMaxValueSliderST"
 		SetSliderDialogRange(-range, range)
 		SetSliderDialoginterval(0.01)
-		SetSliderDialogStartValue(TTT_ArousedNipsMainQuest.MaxValue[_key])
-		SetSliderDialogDefaultValue(TTT_ArousedNipsMainQuest.MaxDefault[_key])
-	elseif _stateName[0] == "MaleMorphMaxValueSliderST"
-		SetSliderDialogRange(-range, range)
-		SetSliderDialoginterval(0.01)
-		SetSliderDialogStartValue(TTT_ArousedNipsMainQuest.MaleMaxValue[_key])
-		SetSliderDialogDefaultValue(TTT_ArousedNipsMainQuest.MaleMaxDefault[_key])
+		SetSliderDialogStartValue(FloatListGet(none, "TTT_ArousedNips_Values_" + storageKey, _index))
+		SetSliderDialogDefaultValue(GetDefaultValue(StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, _index), storageKey))
 	endif
 endEvent
 
 event OnSliderAcceptST(float value)
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
-    int _key = _stateName[1] as int
+    int _index = _stateName[1] as int
 
 	if _stateName[0] == "MorphMaxValueSliderST"
-		TTT_ArousedNipsMainQuest.MaxValue[_key] = value
-		SetSliderOptionValueST(TTT_ArousedNipsMainQuest.MaxValue[_key], "{2}", false, _state)
-	elseif _stateName[0] == "MaleMorphMaxValueSliderST"
-		TTT_ArousedNipsMainQuest.MaleMaxValue[_key] = value
-		SetSliderOptionValueST(TTT_ArousedNipsMainQuest.MaleMaxValue[_key], "{2}", false, _state)
+		FloatListSet(none, "TTT_ArousedNips_Values_" + storageKey, _index, value)
+
+		JsonUtil.SetPathFloatValue("Aroused Nips/MorphList.json", "." + storageKey + "." + StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, _index), value)
+		JsonUtil.Save("Aroused Nips/MorphList.json")
+
+		SetSliderOptionValueST(value, "{2}", false, _state)
 	endif
 endEvent
 
 event OnSelectST()
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
-    int _key = _stateName[1] as int
+    int _index = _stateName[1] as int
 
 	if _stateName[0] == "DeleteMorphKeyTextST"
 		SetTextOptionValueST("Working...")
-		if ShowMessage("Are you sure you want to delete '" + TTT_ArousedNipsMainQuest.MorphNames[_key] + "'' morph?")
-			JsonUtil.ClearPath("Aroused Nips/MorphList.json", ".female." + TTT_ArousedNipsMainQuest.MorphNames[_key])
+		string morphKey = StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, _index)
+		if ShowMessage("Are you sure you want to delete '" + morphKey + "'' morph?")
+			JsonUtil.ClearPath("Aroused Nips/MorphList.json", "." + storageKey + "." + morphKey)
 			JsonUtil.Save("Aroused Nips/MorphList.json")
 
-			TTT_ArousedNipsMainQuest.ReloadMorphList()
+			TTT_ArousedNipsMainQuest.ReloadMorphList(storageKey)
 			ForcePageReset()
 		Else
 			SetTextOptionValueST("", false, _state)
 		endif
-	elseif _stateName[0] == "MaleDeleteMorphKeyTextST"
-		SetTextOptionValueST("Working...")
-		if ShowMessage("Are you sure you want to delete '" + TTT_ArousedNipsMainQuest.MaleMorphNames[_key] + "'' morph?")
-			JsonUtil.ClearPath("Aroused Nips/MorphList.json", ".male." + TTT_ArousedNipsMainQuest.MaleMorphNames[_key])
-			JsonUtil.Save("Aroused Nips/MorphList.json")
-
-			TTT_ArousedNipsMainQuest.ReloadMorphList()
-			ForcePageReset()
-		Else
-			SetTextOptionValueST("", false, _state)
-		endif
+	elseif _stateName[0] == "ClearActorTextST"
+		Actor _actor = FormListGet(none, "TTT_ArousedNips_Actors_" + storageKey, _index) as Actor
+		TTT_ArousedNipsMainQuest.ClearMorphs(_actor, StringListToArray(none, "TTT_ArousedNips_Morphs_" + storageKey))
+		FormListRemoveAt(none, "TTT_ArousedNips_Actors_" + storageKey, _index)
+		ForcePageReset()
 	endif
 endEvent
 
 event OnDefaultST()
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
-    int _key = _stateName[1] as int
+    int _index = _stateName[1] as int
 
 	if _stateName[0] == "MorphMaxValueSliderST"
-		TTT_ArousedNipsMainQuest.MaxValue[_key] = TTT_ArousedNipsMainQuest.MaxDefault[_key]
-		SetSliderOptionValueST(TTT_ArousedNipsMainQuest.MaxValue[_key], "{2}", false, _state)
-	elseif _stateName[0] == "MaleMorphMaxValueSliderST"
-		TTT_ArousedNipsMainQuest.MaleMaxValue[_key] = TTT_ArousedNipsMainQuest.MaleMaxDefault[_key]
-		SetSliderOptionValueST(TTT_ArousedNipsMainQuest.MaleMaxValue[_key], "{2}", false, _state)
+		string morphKey = StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, _index)
+		float defaultValue = GetDefaultValue(morphKey, storageKey)
+
+		FloatListSet(none, "TTT_ArousedNips_Values_" + storageKey, _index, defaultValue)
+
+		JsonUtil.SetPathFloatValue("Aroused Nips/MorphList.json", "." + storageKey + "." + morphKey, defaultValue)
+		JsonUtil.Save("Aroused Nips/MorphList.json")
+
+		SetSliderOptionValueST(defaultValue, "{2}", false, _state)
 	endif
 endEvent
 
 event OnHighlightST()
 	string _state = GetState()
     string[] _stateName = StringUtil.Split(_state, "_")
-    int _key = _stateName[1] as int
+    int _index = _stateName[1] as int
 
 	if _stateName[0] == "MorphMaxValueSliderST"
-		SetInfoText(TTT_ArousedNipsMainQuest.MorphNames[_key] + " at 100 arousal.\nDefault: " + TTT_ArousedNipsMainQuest.MaxDefault[_key])
-	elseif _stateName[0] == "MaleMorphMaxValueSliderST"
-		SetInfoText(TTT_ArousedNipsMainQuest.MaleMorphNames[_key] + " at 100 arousal.\nDefault: " + TTT_ArousedNipsMainQuest.MaleMaxDefault[_key])
-	elseif _stateName[0] == "DeleteMorphKeyTextST"
-		SetInfoText("NOTE: Deleting morphs will not clear them from NPCs its already been applied to.\nIf you are using SLIF you can delete them manually in its MCM if need be.")
+		string morphKey = StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, _index)
+
+		SetInfoText(morphKey + " at 100 arousal.\nDefault: " + GetDefaultValue(morphKey, storageKey))
 	endif
 endEvent
 
@@ -585,4 +537,27 @@ function LoadSettings()
 	RollAvgCount = JsonUtil.GetintValue("Aroused Nips/Settings.json", "RollAvgCount", Missing = 4)
 
 	ForcePageReset()
+endFunction
+
+float function GetDefaultValue(string morphKey, string sex)
+	if sex == "female"
+		if morphKey == "NippleSize"
+			return -0.75
+		elseif morphKey == "NippleLength"
+			return 1.0
+		elseif morphKey == "NipplePerkiness"
+			return 1.5
+		elseif morphKey == "ClitorisErection"
+			return 1.0
+		endif
+	else
+		if morphKey == "NipsTips"
+			return 1.0
+		elseif morphKey == "NipsLength"
+			return 1.0
+		elseif morphKey == "NipsPuffy"
+			return 0.1
+		endif
+	endif
+	return 0.0
 endFunction

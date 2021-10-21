@@ -1,6 +1,8 @@
 ScriptName TTT_ArousedNipsQuest extends Quest Conditional
 {Hosts all state.}
 
+import StorageUtil
+
 TTT_ArousedNipsAlias Property TTT_ArousedNipsPlayerAlias Auto
 
 bool Property SillyComments = False Auto Hidden Conditional
@@ -31,8 +33,8 @@ event OnInit()
 	Debug.Notification("ArousedNips: first time initialization")
 	Debug.Trace("TTT_ArousedNips: first time initialization")
 
-	;ResetDefaults()
-	ReloadMorphList()
+	ReloadMorphList("female")
+	ReloadMorphList("male")
 
 	TTT_ArousedNipsPlayerAlias.OnPlayerLoadGame()
 	Isinitialized = true
@@ -41,17 +43,7 @@ event OnInit()
 	debug.Trace("TTT_ArousedNips: initialization complete")
 endEvent
 
-function ResetDefaults()
-{Keeps defaults up-to-date}
-
-;/ 	MaxDefault = new float[4]
-	MaxDefault[0] = DefaultSize
-	MaxDefault[1] = DefaultLength
-	MaxDefault[2] = DefaultCone
-	MaxDefault[3] = DefaultArea /;
-endFunction
-
-function ReloadMorphList()
+function ReloadMorphList(string storageKey)
 	; Reload json file
 	JsonUtil.Unload("Aroused Nips/MorphList.json")
 	if !JsonUtil.IsGood("Aroused Nips/MorphList.json")
@@ -59,112 +51,80 @@ function ReloadMorphList()
 		return
 	endif
 
-;/ ------------------------------------------------------------------------------------------------------------
- ----------------------------------------------- FEMALE SECTION -----------------------------------------------
- -------------------------------------------------------------------------------------------------------------- /;
 	; cache new values
-	string[] tempnames = JsonUtil.PathMembers("Aroused Nips/MorphList.json", ".female.")
-	float[] tempvalues = Utility.CreatefloatArray(tempnames.Length)
-	MaxDefault = Utility.CreatefloatArray(tempnames.Length)
+	string[] tempnames = JsonUtil.PathMembers("Aroused Nips/MorphList.json", "." + storageKey + ".")
+	float[] tempvalues = Utility.CreateFloatArray(tempnames.Length)
 
 	int i = 0
-	float tempvalue = 0.0
+	float tempvalue
 	while i < tempnames.Length
-		tempvalue = JsonUtil.GetPathfloatValue("Aroused Nips/MorphList.json", ".female." + tempnames[i], 0.0)
+		tempvalue = JsonUtil.GetPathfloatValue("Aroused Nips/MorphList.json", "." + storageKey + "." + tempnames[i], 0.0)
 		tempvalues[i] = tempvalue
-		MaxDefault[i] = tempvalue
 		i += 1
 	endWhile
 
 	; clear old morphs and add new morphs keeping our existing data
 	i = 0
 	int j = -1
-	int k = 0
-	while i < MorphNames.Length
-		j = tempnames.Find(MorphNames[i])
-		if j < 0 ; morph wasnt found in the list
-			; clear applied morphs
-			while k < StorageUtil.FormListCount(none, "TTT_ArousedNips_FemaleActors")
-				Actor _actor = StorageUtil.FormListGet(none, "TTT_ArousedNips_FemaleActors", k) as Actor
-				if TTT_ArousedNipsPlayerAlias.IsSlifInstalled
-					int SLif_event = Modevent.Create("SLif_unregisterMorph")
-					if (SLif_event)
-						Modevent.PushForm(SLif_event, _actor)
-						Modevent.PushString(SLif_event, "Aroused Nips")
-						Modevent.PushString(SLif_event, MorphNames[i])
-						Modevent.Send(SLif_event)
-					endif
-				else
-					NiOverride.ClearBodyMorph(_actor, MorphNames[i], TTT_ArousedNipsPlayerAlias.NIO_KEY)
-					; update actor mophs to reflect changes (in case morphs were removed)
-					;if _actor.Is3DLoaded() && NiOverride.GetMorphNames(_actor).length > 0
-						NiOverride.UpdateModelWeight(_actor)
-					;endif
-				endif
-				k += 1
-			endWhile
+	string morphKey
+	while i < StringListCount(none, "TTT_ArousedNips_Morphs_" + storageKey)
+		morphKey = StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, i)
+		j = tempnames.Find(morphKey)
+		if j < 0 ; morph was NOT found in the list
+			; add it to the list to clear it later
+			StringListAdd(none, "TTT_ArousedNips_MorphsToClear", morphKey, false)
 		else
 			; overwrite with existing values (if names match)
-			tempvalues[j] = MaxValue[i]
+			tempvalues[j] = FloatListGet(none, "TTT_ArousedNips_Values_" + storageKey, i)
 		endif
 		i += 1
 	endWhile
 
 	; set actual values to be used
-	MorphNames = tempnames
-	MaxValue = tempvalues
+	StringListCopy(none, "TTT_ArousedNips_Morphs_" + storageKey, tempnames)
+	FloatListCopy(none, "TTT_ArousedNips_Values_" + storageKey, tempvalues)
 
-;/ ------------------------------------------------------------------------------------------------------------
- ------------------------------------------------ MALE SECTION ------------------------------------------------
- -------------------------------------------------------------------------------------------------------------- /;
-	; cache new values
-	tempnames = JsonUtil.PathMembers("Aroused Nips/MorphList.json", ".male.")
-	tempvalues = Utility.CreatefloatArray(tempnames.Length)
-	MaleMaxDefault = Utility.CreatefloatArray(tempnames.Length)
-
-	i = 0
-	while i < tempnames.Length
-		tempvalue = JsonUtil.GetPathfloatValue("Aroused Nips/MorphList.json", ".male." + tempnames[i], 0.0)
-		tempvalues[i] = tempvalue
-		MaleMaxDefault[i] = tempvalue
-		i += 1
-	endWhile
-
-	; clear old morphs and add new morphs keeping our existing data
-	i = 0
-	j = -1
-	k = 0
-	while i < MaleMorphNames.Length
-		j = tempnames.Find(MaleMorphNames[i])
-		if j < 0 ; morph wasnt found in the list
-			; clear applied morphs
-			while k < StorageUtil.FormListCount(none, "TTT_ArousedNips_MaleActors")
-				Actor _actor = StorageUtil.FormListGet(none, "TTT_ArousedNips_MaleActors", k) as Actor
-				if TTT_ArousedNipsPlayerAlias.IsSlifInstalled
-					int SLif_event = Modevent.Create("SLif_unregisterMorph")
-					if (SLif_event)
-						Modevent.PushForm(SLif_event, _actor)
-						Modevent.PushString(SLif_event, "Aroused Nips")
-						Modevent.PushString(SLif_event, MaleMorphNames[i])
-						Modevent.Send(SLif_event)
-					endif
-				else
-					NiOverride.ClearBodyMorph(_actor, MaleMorphNames[i], TTT_ArousedNipsPlayerAlias.NIO_KEY)
-					; update actor mophs to reflect changes (in case morphs were removed)
-					;if _actor.Is3DLoaded() && NiOverride.GetMorphNames(_actor).length > 0
-						NiOverride.UpdateModelWeight(_actor)
-					;endif
-				endif
-				k += 1
-			endWhile
-		else
-			; overwrite with existing values (if names match)
-			tempvalues[j] = MaleMaxValue[i]
-		endif
-		i += 1
-	endWhile
-
-	; set actual values to be used
-	MaleMorphNames = tempnames
-	MaleMaxValue = tempvalues
+	; clear removed morphs
+	if StringListCount(none, "TTT_ArousedNips_MorphsToClear") > 0
+		i = FormListCount(none, "TTT_ArousedNips_Actors_" + storageKey) - 1
+		Actor _actor
+		while i >= 0
+			_actor = FormListGet(none, "TTT_ArousedNips_Actors_" + storageKey, i) as Actor
+			ClearMorphs(_actor, StringListToArray(none, "TTT_ArousedNips_MorphsToClear"))
+			if StringListCount(_actor, "TTT_ArousedNips_MorphsApplied") == 0
+				FormListRemoveAt(_actor, "TTT_ArousedNips_Actors_" + storageKey, i)
+			endif
+			i -= 1
+		endWhile
+		StringListClear(none, "TTT_ArousedNips_MorphsToClear")
+	endif
 endFunction
+
+function ClearMorphs(actor who, string[] morphList)
+	if who
+		int i = 0
+		while i < morphList.Length
+			ClearMorph(who, morphList[i], TTT_ArousedNipsPlayerAlias.IsSlifInstalled)
+			i += 1
+		endWhile
+	endif
+endFunction
+
+function ClearMorph(actor who, string morphKey, bool slif)
+	if slif
+		int SLif_event = Modevent.Create("SLif_unregisterMorph")
+		if (SLif_event)
+			Modevent.PushForm(SLif_event, who)
+			Modevent.PushString(SLif_event, TTT_ArousedNipsPlayerAlias.SLIF_KEY)
+			Modevent.PushString(SLif_event, morphKey)
+			Modevent.Send(SLif_event)
+		endif
+	else
+		NiOverride.ClearBodyMorph(who, morphKey, TTT_ArousedNipsPlayerAlias.NIO_KEY)
+		; update actor mophs to reflect changes (in case morphs were removed)
+		;if who.Is3DLoaded() && NiOverride.GetMorphNames(who).length > 0
+			NiOverride.UpdateModelWeight(who)
+		;endif
+	endif
+	StringListRemoveAt(who, "TTT_ArousedNips_MorphsApplied", StringListFind(who, "TTT_ArousedNips_MorphsApplied", morphKey))
+endfunction

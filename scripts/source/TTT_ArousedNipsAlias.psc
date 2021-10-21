@@ -1,6 +1,8 @@
 ScriptName TTT_ArousedNipsAlias extends ReferenceAlias
 {For event handling.}
 
+import StorageUtil
+
 TTT_ArousedNipsQuest Property TTT_ArousedNipsMainQuest Auto
 
 FormList Property TTT_ArousedNipsArrayCopyFl Auto
@@ -9,6 +11,7 @@ int Property NIO_VERSION = 6 AutoReadOnly hidden
 int Property NIO_SCRIPT_VERSION = 6 AutoReadOnly hidden
 
 string Property NIO_KEY = "TTT_ArousedNips.esp" AutoReadOnly hidden
+string Property SLIF_KEY = "Aroused Nips" AutoReadOnly hidden
 
 Actor Property PlayerRef Auto
 
@@ -57,7 +60,7 @@ event OnPlayerLoadGame()
 	endif
 
 	; Check Requirements
-	if !CheckNiOverride()
+	if !(NiOverride.GetScriptVersion() >= NIO_SCRIPT_VERSION)
 		; NiO check fail
 		TTT_ArousedNipsMainQuest.isNioOk = false
 		Debug.Notification("ArousedNips: NiOverride version check failed, aborting.")
@@ -77,13 +80,11 @@ event OnPlayerLoadGame()
 		TTT_ArousedNipsMainQuest.isSLArousedOk = true
 	endif
 
+	; success
 	if TTT_ArousedNipsMainQuest.DebugMode
 		Debug.Notification("ArousedNips: requirements check successful")
 		Debug.Trace("TTT_ArousedNips: requirements check successful")
 	endif
-
-	; success
-	;TTT_ArousedNipsMainQuest.ResetDefaults()
 
 	RegisterForModEvent("sla_UpdateComplete", "OnArousalComputed")
 	RegisterForModEvent("StageStart", "OnStageStart")
@@ -103,11 +104,6 @@ event OnPlayerLoadGame()
 	endif
 	SendModEvent("TTT_ArousedNips_LoadGame")
 endEvent
-
-Bool function CheckNiOverride()
-	;Return SKSE.GetPluginVersion("NiOverride") >= NIO_VERSION && NiOverride.GetScriptVersion() >= NIO_SCRIPT_VERSION
-	return NiOverride.GetScriptVersion() >= NIO_SCRIPT_VERSION
-endFunction
 
 event OnArousalComputed(string eventName, string argstring, float argNum, form sender)
 {event thrown by Aroused}
@@ -129,7 +125,7 @@ event OnArousalComputed(string eventName, string argstring, float argNum, form s
 		return
 	endif
 
-	if(argNum <= 0)
+	if (argNum <= 0)
 		if doDebug
 			Debug.Notification("ArousedNips: No aroused NPCs nearby, updating player only")
 			Debug.Trace("TTT_ArousedNips: No aroused NPCs nearby, updating player only")
@@ -198,55 +194,59 @@ function UpdateActor(Actor who, bool doDebug = false, int modifier = 0)
 	ActorBase _actorBase = who.GetLeveledActorBase()
 	if TTT_ArousedNipsMainQuest.OnlyUniqueNPCs && !_actorBase.IsUnique()
 		if doDebug
-			string _actorName = _actorBase.GetName()
-			Debug.Notification("ArousedNips: " + _actorName + " is not unique, skipping")
-			Debug.Trace("TTT_ArousedNips: " + _actorName + ", is unique, skipping")
+			string actorName = _actorBase.GetName()
+			Debug.Notification("ArousedNips: " + actorName + " is not unique, skipping")
+			Debug.Trace("TTT_ArousedNips: " + actorName + " is not unique, skipping")
 		endif
 		return
 	endif
 
-	int _actorSex = _actorBase.GetSex()
-	if _actorSex == 0
+	int actorSex = _actorBase.GetSex()
+	string storageKey
+	if actorSex == 0
 		if TTT_ArousedNipsMainQuest.IgnoreMales
 			if doDebug
-				string _actorName = _actorBase.GetName()
-				Debug.Notification("ArousedNips: " + _actorName + " is male, skipping")
-				Debug.Trace("TTT_ArousedNips: " + _actorName + ", is male, skipping")
-			endif
-			return
-		elseif TTT_ArousedNipsMainQuest.MaleMorphNames.Length == 0
-			if doDebug
-				string _actorName = _actorBase.GetName()
-				Debug.Notification("ArousedNips: " + _actorName + " is male and male morph list is empty, skipping")
-				Debug.Trace("TTT_ArousedNips: " + _actorName + ", is male and male morph list is empty, skipping")
+				string actorName = _actorBase.GetName()
+				Debug.Notification("ArousedNips: " + actorName + " is male, skipping")
+				Debug.Trace("TTT_ArousedNips: " + actorName + " is male, skipping")
 			endif
 			return
 		endif
-	elseif _actorSex == 1 
+		storageKey = "male"
+	elseif actorSex == 1 
 		if TTT_ArousedNipsMainQuest.IgnoreFemales
 			if doDebug
-				string _actorName = _actorBase.GetName()
-				Debug.Notification("ArousedNips: " + _actorName + " is female, skipping")
-				Debug.Trace("TTT_ArousedNips: " + _actorName + ", is female, skipping")
-			endif
-			return
-		elseif TTT_ArousedNipsMainQuest.MorphNames.Length == 0
-			if doDebug
-				string _actorName = _actorBase.GetName()
-				Debug.Notification("ArousedNips: " + _actorName + " is female and female morph list is empty, skipping")
-				Debug.Trace("TTT_ArousedNips: " + _actorName + ", is female and female morph list is empty, skipping")
+				string actorName = _actorBase.GetName()
+				Debug.Notification("ArousedNips: " + actorName + " is female, skipping")
+				Debug.Trace("TTT_ArousedNips: " + actorName + " is female, skipping")
 			endif
 			return
 		endif
+		storageKey = "female"
+	else
+		if doDebug
+			string actorName = _actorBase.GetName()
+			Debug.Notification("ArousedNips: " + actorName + " has unspecified sex, skipping")
+			Debug.Trace("TTT_ArousedNips: " + actorName + " has unspecified sex, skipping")
+		endif
+		return
+	endif
+
+	if StringListCount(none, "TTT_ArousedNips_Morphs_" + storageKey) == 0
+		if doDebug
+			Debug.Notification("ArousedNips: " + storageKey + " morph list is empty, skipping")
+			Debug.Trace("TTT_ArousedNips: " + storageKey + " morph list is empty, skipping")
+		endif
+		return
 	endif
 
 	;int Arousal = who.GetFactionRank(sla_Framework.slaArousal)
 	float Arousal = who.GetFactionRank(sla_Framework.slaArousal)
-
+	string actorName
 	if doDebug
-		string _actorName = _actorBase.GetName()
-		Debug.Notification("ArousedNips: " + _actorName + " has Arousal " + Arousal + "(+" + modifier + ")")
-		Debug.Trace("TTT_ArousedNips: " + _actorName + " has Arousal " + Arousal + "(+" + modifier + ")")
+		actorName = _actorBase.GetName()
+		Debug.Notification("ArousedNips: " + actorName + " has Arousal " + Arousal + "(+" + modifier + ")")
+		Debug.Trace("TTT_ArousedNips: " + actorName + " has Arousal " + Arousal + "(+" + modifier + ")")
 	endif
 
 	if Arousal < 0 && who != PlayerRef
@@ -266,8 +266,8 @@ function UpdateActor(Actor who, bool doDebug = false, int modifier = 0)
 		float ColdValue = 0.0
 		float MilkValue = 0.0
 		if IsMmeInstalled
-			float MilkCount = StorageUtil.GetfloatValue(PlayerRef, "MME.MilkMaid.MilkCount")
-			float MilkMax = StorageUtil.GetfloatValue(PlayerRef, "MME.MilkMaid.MilkMaximum")
+			float MilkCount = GetfloatValue(PlayerRef, "MME.MilkMaid.MilkCount")
+			float MilkMax = GetfloatValue(PlayerRef, "MME.MilkMaid.MilkMaximum")
 			if MilkMax > 0.0
 				MilkValue = (MilkCount / MilkMax)
 				if MilkValue > 1.0
@@ -289,7 +289,7 @@ function UpdateActor(Actor who, bool doDebug = false, int modifier = 0)
 		endif
 
 		;Debug.Notification("Arousal: " + (Arousal / 100.0) + ". ColdValue: " + ColdValue + ". MilkValue: " + MilkValue)
-		float NipCurrent = Multiplier
+		;float NipCurrent = Multiplier
 		ShiftArrayLeft(RollAvg, NumOfUpdatesRollAvg)
 		RollAvg[NumOfUpdatesRollAvg - 1] = Multiplier
 		Multiplier = AddArray(RollAvg, NumOfUpdatesRollAvg) / NumOfUpdatesRollAvg
@@ -302,62 +302,40 @@ function UpdateActor(Actor who, bool doDebug = false, int modifier = 0)
 		endif
 	endif
 
-	int j = 0
-	string[] _morphs
-	float[] _values
-
-	if _actorSex == 0
-		StorageUtil.FormListAdd(none, "TTT_ArousedNips_MaleActors", who, false)
-		_morphs = TTT_ArousedNipsMainQuest.MaleMorphNames
-		_values = TTT_ArousedNipsMainQuest.MaleMaxValue
-	else
-		StorageUtil.FormListAdd(none, "TTT_ArousedNips_FemaleActors", who, false)
-		_morphs = TTT_ArousedNipsMainQuest.MorphNames
-		_values = TTT_ArousedNipsMainQuest.MaxValue
-	endif
-
-	while j < _morphs.Length
-		float Value = _values[j] * Multiplier
-		if IsSlifInstalled
-			SetBodyMorph(who, _morphs[j], Value)
-		else
-			NiOverride.SetBodyMorph(who, _morphs[j], NIO_KEY, Value)
-			NiOverride.UpdateModelWeight(who)
-		endif
+	FormListAdd(none, "TTT_ArousedNips_Actors_" + storageKey, who, false)
+	int i = 0
+	while i < StringListCount(none, "TTT_ArousedNips_Morphs_" + storageKey)
+		string morphKey = StringListGet(none, "TTT_ArousedNips_Morphs_" + storageKey, i)
+		float morphValue = FloatListGet(none, "TTT_ArousedNips_Values_" + storageKey, i) * Multiplier
+		StringListAdd(who, "TTT_ArousedNips_MorphsApplied", morphKey)
+		SetBodyMorph(who, morphKey, morphValue)
 		if doDebug
-			Debug.Notification("ArousedNips: setting " + _morphs[j] + " to " + Value)
-			Debug.Trace("TTT_ArousedNips: setting " + _morphs[j] + " to " + Value)
+			Debug.Notification("ArousedNips: setting " + morphKey + " on " + actorName + " to " + morphValue)
+			Debug.Trace("TTT_ArousedNips: setting " + morphKey + " on " + actorName  + " to " + morphValue)
 		endif
-		j += 1
+		i += 1
 	endWhile
+
+	if !IsSlifInstalled
+		NiOverride.UpdateModelWeight(who)
+	endif
 endFunction
 
 function SetBodyMorph(Actor kActor, string morphName, float value)
-	SLif_morph(kActor, morphName, value)
-endFunction
-
-function SLif_morph(Actor kActor, string morphName, float value)
-	int SLif_event = ModEvent.Create("SLif_morph")
-	if (SLif_event)
-		ModEvent.PushForm(SLif_event, kActor)
-		ModEvent.PushString(SLif_event, "Aroused Nips")
-		ModEvent.PushString(SLif_event, morphName)
-		ModEvent.PushFloat(SLif_event, value)
-		ModEvent.PushString(SLif_event, NIO_KEY)
-		ModEvent.Send(SLif_event)
+	if IsSlifInstalled
+		int SLif_event = ModEvent.Create("SLif_morph")
+		if (SLif_event)
+			ModEvent.PushForm(SLif_event, kActor)
+			ModEvent.PushString(SLif_event, SLIF_KEY)
+			ModEvent.PushString(SLif_event, morphName)
+			ModEvent.PushFloat(SLif_event, value)
+			ModEvent.PushString(SLif_event, NIO_KEY)
+			ModEvent.Send(SLif_event)
+		endif
+	else
+		NiOverride.SetBodyMorph(kActor, morphName, NIO_KEY, value)
 	endif
 endFunction
-
-;/
-function SLif_UnRegisterActor(Actor akActor)
-	int SLif_event = ModEvent.Create("SLif_unregisterActor")
-	if (SLif_event)
-		ModEvent.PushForm(SLif_event, akActor)
-		ModEvent.PushString(SLif_event, "Aroused Nips")
-		ModEvent.Send(SLif_event)
-	endif
-endFunction
-/;
 
 event OnStageStart(string eventName, string argstring, float argNum, form sender)
 {Experimental.}
